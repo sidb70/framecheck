@@ -49,7 +49,7 @@ def extract_claims(transcript, video_base_dir):
     claims = []
     claims_path = video_base_dir + '/results/claims.json'
     if not os.path.exists(claims_path):
-        messages = [{'role': 'system', 'content': EXTRACTION_INSTRUCTIONS},
+        messages = [{'role': 'system', 'contenta': EXTRACTION_INSTRUCTIONS},
                     {'role': 'user', 'content': transcript}]
         response = client.chat.completions.create(model='gpt-4-1106-preview',
                                                 messages=messages,

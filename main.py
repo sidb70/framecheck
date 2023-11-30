@@ -1,7 +1,7 @@
-import speech2text
-from audio import Audio
+import backend.speech2text as speech2text
+from backend.audio import Audio
 import argparse
-import fact_checker
+import backend.fact_checker as fact_checker
 from typing import Tuple, Dict, List
 import os
 from typing import Union
