@@ -7,8 +7,7 @@ from langchain.chains import RetrievalQA
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
 
-functions = [
-    {
+claim_function = {
         'name': 'claim_extraction',
         'description': 'Extract any claims made in the transcript',
         'parameters': {
@@ -26,20 +25,17 @@ functions = [
         }
 
     }
-]
 
-EXTRACTION_INSTRUCTIONS = 'You are a claim-extracting assistant. Your role as the claim-extractor is to \
-    return any non-subjective claims about the world, people, or any topic. Extract these \
-        claims from the text. Even if you are slightly unsure, return the claim. Provide context\
-            for the claim and specify all subjects referred to in the claim.'
+
+EXTRACTION_INSTRUCTIONS = 'You are a claim-extracting assistant. Your role as the claim-extractor is to return any non-subjective claims about the world, people, or any topic. Extract these claims from the text. Even if you are slightly unsure, return the claim. Provide context for the claim and specify all subjects referred to in the claim.'
 CLAIM_QUESTION = 'Is this claim TRUE, FALSE, or UNCERTAIN? Please reply with JSON with keys "truth_value" and "explanation".'
 client = OpenAI()
 
 # load you.com api key from environment variable
 YOU_API_KEY = os.environ['YDC_API_KEY']
 yr = YouRetriever()
-model = "gpt-3.5-turbo-1106"
-qa = RetrievalQA.from_chain_type(llm=ChatOpenAI(model=model), chain_type="stuff", retriever=yr)
+gptmodel = "gpt-3.5-turbo-1106"
+qa = RetrievalQA.from_chain_type(llm=ChatOpenAI(model=gptmodel), chain_type="stuff", retriever=yr)
 
 
 def extract_claims(transcript, video_base_dir):
@@ -49,12 +45,12 @@ def extract_claims(transcript, video_base_dir):
     claims = []
     claims_path = video_base_dir + '/results/claims.json'
     if not os.path.exists(claims_path):
-        messages = [{'role': 'system', 'contenta': EXTRACTION_INSTRUCTIONS},
+        messages = [{'role': 'system', 'content': EXTRACTION_INSTRUCTIONS},
                     {'role': 'user', 'content': transcript}]
-        response = client.chat.completions.create(model='gpt-4-1106-preview',
+        response = client.chat.completions.create(model=gptmodel,
                                                 messages=messages,
-                                                functions=functions)
-        claims = json.loads(response.choices[0].message.function_call.arguments)['claims']
+                                                tools = [{"type": "function", "function": claim_function}])
+        claims = json.loads(response.choices[0].message.tool_calls[0].function.arguments)['claims']
         # write claims to file
         os.makedirs(os.path.dirname(claims_path), exist_ok=True)
         with open(claims_path, 'w') as f:
@@ -102,6 +98,4 @@ def check_claims(claims, claims_path):
     return results
 
 if __name__=='__main__': 
-    question = 'Why did sam altman get fired from openai?'
-    res = qa.run(question)
-    print(res)
+    extract_claims('The sky is blue. How are you? The current presiden of Canada is Barack Obama', '/Users/sidb/Development/framecheck/.videos/iRYZjOuUnlU/audio/test')

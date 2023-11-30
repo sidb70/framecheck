@@ -6,7 +6,23 @@ from typing import Tuple, Dict, List
 import os
 from typing import Union
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+
 app = FastAPI()
+
+origins = [
+    "http://localhost",
+    "http://localhost:3000",  # Add the origin of your Next.js app
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 
 VIDEOS_DIR  = './.videos/{}/'
@@ -14,8 +30,10 @@ VIDEOS_DIR  = './.videos/{}/'
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
+
 @app.get("/video/{id}")
 def read_video(id: str):
+    print("Received id: " + id)
     url = 'https://www.youtube.com/watch?v=' + id
     claims_results = main(url, id)
     return claims_results
@@ -26,11 +44,11 @@ def download_and_transcribe(url: str, id: str, video_dir: str) -> Tuple[str, Aud
     :param url: url of youtube video
     :return: transcription of audio
     '''
-    audio = Audio(url, id, video_dir)
-    audio.split()
-    five_sec_chunks = audio.audio_chunks_fivesec
-    transcript_path = audio.get_path().strip('mp3') + 'txt'
+    transcript_path = "{}/audio/{}.txt".format(video_dir, id)
     if not os.path.exists(transcript_path):
+        audio = Audio(url, id, video_dir)
+        audio.split()
+        five_sec_chunks = audio.audio_chunks_fivesec
         transcription = speech2text.transcribe(five_sec_chunks)
         # save transcription
         os.makedirs(os.path.dirname(transcript_path), exist_ok=True)
@@ -40,7 +58,7 @@ def download_and_transcribe(url: str, id: str, video_dir: str) -> Tuple[str, Aud
         with open(transcript_path, 'r') as f:
             transcription = f.read()
     print("transcription complete")
-    return transcription, transcript_path, audio
+    return transcription, transcript_path
 def fact_check(transcript: str, video_base_dir: str) -> List[Dict[str, str]]:
     '''
     Checks the facts in the transcribed audio
@@ -55,8 +73,9 @@ def main(url: str, id: str):
     :param url: url of youtube video
     '''
     video_dir = VIDEOS_DIR.format(id)
-    transcript, transcript_path, audio = download_and_transcribe(url, id, video_dir)
+    transcript, transcript_path = download_and_transcribe(url, id, video_dir)
     results = fact_check(transcript, video_dir)
+    print("returning", len(results), "results")
     return results
 if __name__ == '__main__':
     try:

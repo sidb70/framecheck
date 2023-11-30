@@ -7,4 +7,6 @@ key.json
 *.mp3
 *.wav
 .videos/
-/__pychache__
+__pychache__/
+node_modules/
+.next/
