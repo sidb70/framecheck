@@ -1,0 +1,10 @@
+venv/
+key.json
+*.pyc
+*git
+.DS_Store
+.audio/
+*.mp3
+*.wav
+.videos/
+/__pychache__
