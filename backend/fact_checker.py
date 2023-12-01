@@ -27,8 +27,8 @@ claim_function = {
     }
 
 
-EXTRACTION_INSTRUCTIONS = 'You are a claim-extracting assistant. Your role as the claim-extractor is to return any non-subjective claims about the world, people, or any topic. Extract these claims from the text. Even if you are slightly unsure, return the claim. Provide context for the claim and specify all subjects referred to in the claim.'
-CLAIM_QUESTION = 'Is this claim TRUE, FALSE, or UNCERTAIN? Please reply with JSON with keys "truth_value" and "explanation".'
+EXTRACTION_INSTRUCTIONS = 'You are a claim extractor for video transcript. Focus on extracting objective claims about the world, people, or any topic. Your output should be concise and factual. Clarify the subjects involved. If it an easily verifiable claim (e.g. "The United States is in North America), do not include it.'
+CLAIM_QUESTION = 'Is this claim TRUE, FALSE, or UNCERTAIN? Please reply with JSON with keys "truth_value" and "explanation". Make the explanation concise and factual.'
 client = OpenAI()
 
 # load you.com api key from environment variable
@@ -49,7 +49,9 @@ def extract_claims(transcript, video_base_dir):
                     {'role': 'user', 'content': transcript}]
         response = client.chat.completions.create(model=gptmodel,
                                                 messages=messages,
-                                                tools = [{"type": "function", "function": claim_function}])
+                                                tools = [{"type": "function", "function": claim_function}],
+                                                )
+        print(response.choices[0].message.tool_calls[0].function.arguments)
         claims = json.loads(response.choices[0].message.tool_calls[0].function.arguments)['claims']
         # write claims to file
         os.makedirs(os.path.dirname(claims_path), exist_ok=True)
