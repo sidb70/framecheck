@@ -13,7 +13,7 @@ opts = {
 TIME_STAMP_MATCH = '\d{2}:\d{2}:\d{2}\.\d+ --> \d{2}:\d{2}:\d{2}\.\d+'
 def extract_transcript_from_captions(captions_path):
     file_lines = []
-    with open(captions_path, 'r') as f:
+    with open(captions_path, 'r', encoding='utf-8') as f:
         for i in range(3):
             # skip header lines
             f.readline()
@@ -33,7 +33,7 @@ def extract_transcript_from_captions(captions_path):
     return transcript, transcript_pieces
 
 
-def download_transcript(url, id, base_dir):
+async def download_transcript(url, id, base_dir):
     out_path = base_dir + '/captions/{}.captions.en.vtt'.format(id)
     if not os.path.exists(out_path):
         print("downloading captions")

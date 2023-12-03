@@ -1,5 +1,4 @@
-// pages/index.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export default function Home() {
@@ -7,6 +6,7 @@ export default function Home() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [taskId, setTaskId] = useState(null);
 
   const extractVideoId = (url) => {
     try {
@@ -19,6 +19,28 @@ export default function Home() {
     }
   };
 
+  const fetchResults = async (taskId) => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/api/tasks/${taskId}`);
+      console.log('status:', response.data.status)
+      if (response.data.status === 'SUCCESS') {
+        setResults(response.data.results);
+        setLoading(false);
+      } else if (response.data.status === 'PENDING') {
+        // Task is still pending, check again after a delay
+        setTimeout(() => fetchResults(taskId), 1000);
+      } else {
+        // Handle other statuses (e.g., ERROR)
+        setLoading(false);
+        setError('Error fetching data. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setLoading(false);
+      setError('Error fetching data. Please try again.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -28,6 +50,7 @@ export default function Home() {
 
     if (!videoId) {
       // Show error message to the user
+      setError('Invalid YouTube URL');
       return;
     }
 
@@ -35,19 +58,18 @@ export default function Home() {
       // Set loading to true before making the request
       setLoading(true);
       setError('');
+      setResults([]); // Clear previous results
 
-      // Make GET request with the extracted video ID
-      const response = await axios.get(`http://www.framecheck.tech/api/video/${videoId}`);
-
-      // Set loading to false after receiving the response
-      setLoading(false);
-      setResults(response.data);
+      // Make POST request to start the processing
+      const response = await axios.post(`http://localhost:8000/api/video/${videoId}`);
+      console.log('response:', response);
+      // Set task ID and start checking for results
+      setTaskId(response.data.taskId);
+      fetchResults(response.data.taskId);
     } catch (error) {
-      console.error('Error fetching data:', error);
-
-      // Set loading to false and display an error message
+      console.error('Error initiating processing:', error);
       setLoading(false);
-      setError('Error fetching data. Please try again.');
+      setError('Error initiating processing. Please try again.');
     }
   };
 
@@ -56,6 +78,7 @@ export default function Home() {
     setVideoUrl(e.target.value);
     setResults([]); // Clear previous results
     setError(''); // Clear the error when the user makes changes
+    setTaskId(null); // Clear previous task ID
   };
 
   return (

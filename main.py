@@ -2,15 +2,16 @@ import backend.speech2text as speech2text
 import backend.fact_checker as fact_checker
 import backend.captions as captions
 from typing import Tuple, Dict, List
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import argparse
+import uuid
 
 app = FastAPI()
 
 origins = [
     "http://localhost",
-    "http://localhost:3000",  # Add the origin of your Next.js app
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://wwww.framecheck.tech",
     "https://www.framecheck.tech",
@@ -24,45 +25,42 @@ app.add_middleware(
 )
 
 VIDEOS_DIR  = './.videos/{}/'
-
+tasks = {}
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/api/video/{id}")
-def read_video(id: str):
-    print("Received id: " + id)
-    url = 'https://www.youtube.com/watch?v=' + id
-    claims_results = main(url, id)
-    return claims_results
-    
-def download_and_transcribe(url: str, id: str, base_dir: str) -> Tuple[str, str]:
-    '''
-    Gets the transcript of the video
-    :param url: url of youtube video
-    :return transcript: transcript of video
-    :return transcript_path: path to transcript
-    '''
-    transcription, transcript_path = captions.download_transcript(url, id, base_dir)
+@app.get("/api/tasks/{task_id}")
+async def task_status(task_id: str):
+    print("Received task id: " + task_id)
+    if task_id in tasks:
+        return tasks[task_id]
+@app.post("/api/video/{video_id}")
+async def read_video(video_id: str, background_tasks: BackgroundTasks):
+    print("Received id: " + video_id)
+    url = 'https://www.youtube.com/watch?v=' + video_id
+    unique_id = str(uuid.uuid4())
+    tasks[unique_id] = {'status': 'PENDING', 'results': []}
+    background_tasks.add_task(process_video, url, video_id, unique_id)
+    return {"taskId": unique_id}
+
+async def process_video(url: str, video_id: str, unique_id: str):
+    print("Processing video with id: " + video_id)
+    video_dir = VIDEOS_DIR.format(video_id)
+    transcript, transcript_path = await download_and_transcribe(url, video_id, video_dir)
+
+    results = await fact_check(transcript, video_dir)
+    tasks[unique_id] = {'status': 'SUCCESS', 'results': results}
+
+async def download_and_transcribe(url: str, video_id: str, base_dir: str) -> Tuple[str, str]:
+    transcription, transcript_path = await captions.download_transcript(url, video_id, base_dir)
     return transcription, transcript_path
-def fact_check(transcript: str, video_base_dir: str) -> List[Dict[str, str]]:
-    '''
-    Checks the facts in the video transcript
-    :param transcript: transcript of video
-    '''
-    claims, claims_path = fact_checker.extract_claims(transcript, video_base_dir)
-    results = fact_checker.check_claims(claims, claims_path)
+
+async def fact_check(transcript: str, video_base_dir: str) -> List[Dict[str, str]]:
+    claims, claims_path = await fact_checker.extract_claims(transcript, video_base_dir)
+    results = await fact_checker.check_claims(claims, claims_path)
     return results
-def main(url: str, id: str):
-    '''
-    Main function
-    :param url: url of youtube video
-    '''
-    video_dir = VIDEOS_DIR.format(id)
-    transcript, transcript_path = download_and_transcribe(url, id, video_dir)
-    results = fact_check(transcript, video_dir)
-    print("returning", len(results), "results")
-    return results
+
 if __name__ == '__main__':
     try:
         parser = argparse.ArgumentParser(description='Fact check this video')
@@ -71,5 +69,5 @@ if __name__ == '__main__':
         url = args.url
     except SystemExit as e:
         url = input('url of video to fact check: ')
-    main(url)
-
+    import asyncio
+    asyncio.run(main(url))

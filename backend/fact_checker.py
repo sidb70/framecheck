@@ -27,18 +27,18 @@ claim_function = {
     }
 
 
-EXTRACTION_INSTRUCTIONS = 'You are a claim extractor for video transcript. Focus on extracting objective claims about the world, people, or any topic. Your output should be concise and factual. Clarify the subjects involved. If it an easily verifiable claim (e.g. "The United States is in North America), do not include it.'
+EXTRACTION_INSTRUCTIONS = "You are a claim extractor for video transcript. Focus on extracting objective claims about the world, people, or any topic. Clarify the subjects involved. Do not extract subjective claims about the speaker's feelings or opinions."
 CLAIM_QUESTION = 'Is this claim TRUE, FALSE, or UNCERTAIN? Please reply with JSON with keys "truth_value" and "explanation". Make the explanation concise and factual.'
 client = OpenAI()
 
 # load you.com api key from environment variable
 YOU_API_KEY = os.environ['YDC_API_KEY']
 yr = YouRetriever()
-gptmodel = "gpt-3.5-turbo-1106"
+gptmodel = "gpt-4-1106-preview"
 qa = RetrievalQA.from_chain_type(llm=ChatOpenAI(model=gptmodel), chain_type="stuff", retriever=yr)
 
 
-def extract_claims(transcript, video_base_dir):
+async def extract_claims(transcript, video_base_dir):
     '''
     Extracts claims from transcript
     '''
@@ -47,7 +47,7 @@ def extract_claims(transcript, video_base_dir):
     if not os.path.exists(claims_path):
         messages = [{'role': 'system', 'content': EXTRACTION_INSTRUCTIONS},
                     {'role': 'user', 'content': transcript}]
-        response = client.chat.completions.create(model=gptmodel,
+        response = client.chat.completions.create(model='gpt-3.5-turbo-1106',
                                                 messages=messages,
                                                 tools = [{"type": "function", "function": claim_function}],
                                                 )
@@ -77,7 +77,7 @@ def check_one_claim(claim):
     print(explanation)
     return truth_value, explanation
     
-def check_claims(claims, claims_path):
+async def check_claims(claims, claims_path):
     '''
     Checks the claims for their validity
     '''
