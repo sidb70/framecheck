@@ -37,7 +37,7 @@ export default function Home() {
       setError('');
 
       // Make GET request with the extracted video ID
-      const response = await axios.get(`http://127.0.0.1:8000/video/${videoId}`);
+      const response = await axios.get(`http://www.framecheck.tech/api/video/${videoId}`);
 
       // Set loading to false after receiving the response
       setLoading(false);

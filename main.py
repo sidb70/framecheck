@@ -14,6 +14,8 @@ app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:3000",  # Add the origin of your Next.js app
+    "http://wwww.framecheck.tech",
+    "https://www.framecheck.tech",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -31,7 +33,7 @@ VIDEOS_DIR  = './.videos/{}/'
 def read_root():
     return {"Hello": "World"}
 
-@app.get("/video/{id}")
+@app.get("/api/video/{id}")
 def read_video(id: str):
     print("Received id: " + id)
     url = 'https://www.youtube.com/watch?v=' + id
