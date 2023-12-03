@@ -1,19 +1,17 @@
 import backend.speech2text as speech2text
-from backend.audio import Audio
-import argparse
 import backend.fact_checker as fact_checker
+import backend.captions as captions
 from typing import Tuple, Dict, List
-import os
-from typing import Union
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+import argparse
 
 app = FastAPI()
 
 origins = [
     "http://localhost",
     "http://localhost:3000",  # Add the origin of your Next.js app
+    "http://127.0.0.1:3000",
     "http://wwww.framecheck.tech",
     "https://www.framecheck.tech",
 ]
@@ -24,8 +22,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
 
 VIDEOS_DIR  = './.videos/{}/'
 
@@ -40,31 +36,19 @@ def read_video(id: str):
     claims_results = main(url, id)
     return claims_results
     
-def download_and_transcribe(url: str, id: str, video_dir: str) -> Tuple[str, Audio]:
+def download_and_transcribe(url: str, id: str, base_dir: str) -> Tuple[str, str]:
     '''
-    Downloads audio from youtube video and transcribes it
+    Gets the transcript of the video
     :param url: url of youtube video
-    :return: transcription of audio
+    :return transcript: transcript of video
+    :return transcript_path: path to transcript
     '''
-    transcript_path = "{}/audio/{}.txt".format(video_dir, id)
-    if not os.path.exists(transcript_path):
-        audio = Audio(url, id, video_dir)
-        audio.split()
-        five_sec_chunks = audio.audio_chunks_fivesec
-        transcription = speech2text.transcribe(five_sec_chunks)
-        # save transcription
-        os.makedirs(os.path.dirname(transcript_path), exist_ok=True)
-        with open(transcript_path, 'w') as f:
-            f.write(transcription)
-    else:
-        with open(transcript_path, 'r') as f:
-            transcription = f.read()
-    print("transcription complete")
+    transcription, transcript_path = captions.download_transcript(url, id, base_dir)
     return transcription, transcript_path
 def fact_check(transcript: str, video_base_dir: str) -> List[Dict[str, str]]:
     '''
-    Checks the facts in the transcribed audio
-    :param transcript: transcript of audio
+    Checks the facts in the video transcript
+    :param transcript: transcript of video
     '''
     claims, claims_path = fact_checker.extract_claims(transcript, video_base_dir)
     results = fact_checker.check_claims(claims, claims_path)
