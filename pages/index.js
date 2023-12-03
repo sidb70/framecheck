@@ -21,7 +21,7 @@ export default function Home() {
 
   const fetchResults = async (taskId) => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/tasks/${taskId}`);
+      const response = await axios.get(`http://www.framecheck.tech/api/tasks/${taskId}`);
       console.log('status:', response.data.status)
       if (response.data.status === 'SUCCESS') {
         setResults(response.data.results);
@@ -61,7 +61,7 @@ export default function Home() {
       setResults([]); // Clear previous results
 
       // Make POST request to start the processing
-      const response = await axios.post(`http://localhost:8000/api/video/${videoId}`);
+      const response = await axios.post(`http://www.framecheck.tech/api/video/${videoId}`);
       console.log('response:', response);
       // Set task ID and start checking for results
       setTaskId(response.data.taskId);
