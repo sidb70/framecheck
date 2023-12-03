@@ -1,2 +1,2 @@
-# framecheck
-Fact checker for YouTube. Link will be up soon.
+# [framecheck.tech](www.framecheck.tech)
+Fact checker for YouTube.
