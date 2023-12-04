@@ -64,7 +64,7 @@ async def extract_claims(transcript, video_base_dir):
     return claims, claims_path
 
 
-def check_one_claim(claim):
+async def check_one_claim(claim):
     '''
     Checks one claim for its validity
     '''
@@ -86,7 +86,7 @@ async def check_claims(claims, claims_path):
     results_path = claims_path.replace('claims', 'results')
     if not os.path.exists(results_path):
         for claim in claims:
-            truth_value, explanation = check_one_claim(claim)
+            truth_value, explanation = await check_one_claim(claim)
             results.append({'claim': claim, 'truth_value': truth_value, 'explanation': explanation})
         # write results to file
         os.makedirs(os.path.dirname(results_path), exist_ok=True)

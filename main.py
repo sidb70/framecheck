@@ -26,6 +26,7 @@ app.add_middleware(
 
 VIDEOS_DIR  = './.videos/{}/'
 tasks = {}
+results = {}
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -33,14 +34,13 @@ def read_root():
 @app.get("/api/tasks/{task_id}")
 async def task_status(task_id: str):
     print("Received task id: " + task_id)
-    if task_id in tasks:
-        return tasks[task_id]
+    return tasks[task_id]
 @app.post("/api/video/{video_id}")
 async def read_video(video_id: str, background_tasks: BackgroundTasks):
     print("Received id: " + video_id)
     url = 'https://www.youtube.com/watch?v=' + video_id
     unique_id = str(uuid.uuid4())
-    tasks[unique_id] = {'status': 'PENDING', 'results': []}
+    tasks[unique_id] = {'status': 'PENDING', 'video_id': video_id}
     background_tasks.add_task(process_video, url, video_id, unique_id)
     return {"taskId": unique_id}
 
@@ -50,7 +50,8 @@ async def process_video(url: str, video_id: str, unique_id: str):
     transcript, transcript_path = await download_and_transcribe(url, video_id, video_dir)
 
     results = await fact_check(transcript, video_dir)
-    tasks[unique_id] = {'status': 'SUCCESS', 'results': results}
+    tasks[unique_id]['status']= 'SUCCESS'
+    tasks[unique_id]['results']= results
 
 async def download_and_transcribe(url: str, video_id: str, base_dir: str) -> Tuple[str, str]:
     transcription, transcript_path = await captions.download_transcript(url, video_id, base_dir)
