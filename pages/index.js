@@ -21,6 +21,7 @@ export default function Home() {
 
   const fetchResults = async (taskId) => {
     try {
+      console.log('checking for updates')
       const response = await axios.get(`http://www.framecheck.tech/api/tasks/${taskId}`);
       console.log('status:', response.data.status)
       if (response.data.status === 'SUCCESS') {
@@ -28,6 +29,7 @@ export default function Home() {
         setLoading(false);
       } else if (response.data.status === 'PENDING') {
         // Task is still pending, check again after a delay
+        console.log('task is still pending')
         setTimeout(() => fetchResults(taskId), 1000);
       } else {
         // Handle other statuses (e.g., ERROR)
@@ -61,7 +63,7 @@ export default function Home() {
       setResults([]); // Clear previous results
 
       // Make POST request to start the processing
-      const response = await axios.post(`http://www.framecheck.tech/api/video/${videoId}`);
+      const response = await axios.post(`http:///www.framecheck.tech/api/video/${videoId}`);
       console.log('response:', response);
       // Set task ID and start checking for results
       setTaskId(response.data.taskId);
